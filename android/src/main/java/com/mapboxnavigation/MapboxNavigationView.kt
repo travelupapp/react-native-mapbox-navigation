@@ -760,8 +760,9 @@ class MapboxNavigationView(private val context: ThemedReactContext): FrameLayout
     mapboxNavigation?.unregisterRouteProgressObserver(routeProgressObserver)
     mapboxNavigation?.unregisterVoiceInstructionsObserver(voiceInstructionsObserver)
 
-    // Clear routs and end
+    // Clear routes, stop trip session and foreground service
     mapboxNavigation?.setNavigationRoutes(listOf())
+    mapboxNavigation?.stopTripSession()
 
     // hide UI elements
     binding.soundButton.visibility = View.INVISIBLE

@@ -350,7 +350,7 @@ class MapboxNavigationView(private val context: ThemedReactContext): FrameLayout
       // it's best to immediately move the camera to the current user location
       if (!firstLocationUpdateReceived) {
         firstLocationUpdateReceived = true
-        navigationCamera.requestNavigationCameraToOverview(
+        navigationCamera.requestNavigationCameraToFollowing(
           stateTransitionOptions = NavigationCameraTransitionOptions.Builder()
             .maxDuration(0) // instant transition
             .build()

@@ -89,6 +89,8 @@ public class MapboxNavigationView: UIView, NavigationViewControllerDelegate {
         cancellables.removeAll()
         mapboxNavigationProvider = nil
         mapboxNavigation = nil
+        embedded = false
+        embedding = false
     }
 
     private func embed() {
@@ -152,7 +154,11 @@ public class MapboxNavigationView: UIView, NavigationViewControllerDelegate {
         let request = navigation.routingProvider().calculateRoutes(options: options)
 
         Task { @MainActor [weak self] in
-            guard let self, let parentVC = self.parentViewController else { return }
+            guard let self else { return }
+            guard let parentVC = self.parentViewController else {
+                self.embedding = false
+                return
+            }
 
             switch await request.result {
             case .failure(let error):

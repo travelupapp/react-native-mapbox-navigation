@@ -9,6 +9,25 @@
 #import "MapboxWaypoint.h"
 #import "RCTConvert+MapboxNavigation.h"
 
+// Register MapboxNavigationView with RN New Architecture Fabric Interop Layer.
+// In Bridgeless mode (RN 0.76+) requireNativeComponent only works for components
+// explicitly registered via RCTLegacyViewManagerInteropComponentView.
+// Using runtime dispatch to avoid a compile-time dependency on React-RCTFabric headers.
+@interface _MapboxNavInteropRegistration : NSObject
+@end
+@implementation _MapboxNavInteropRegistration
++ (void)load {
+    Class cls = NSClassFromString(@"RCTLegacyViewManagerInteropComponentView");
+    SEL sel = NSSelectorFromString(@"supportLegacyViewManagerWithName:");
+    if (cls && [cls respondsToSelector:sel]) {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
+        [cls performSelector:sel withObject:@"MapboxNavigationView"];
+#pragma clang diagnostic pop
+    }
+}
+@end
+
 @interface RCT_EXTERN_MODULE(MapboxNavigationViewManager, RCTViewManager)
 
 RCT_EXPORT_VIEW_PROPERTY(onLocationChange, RCTDirectEventBlock)

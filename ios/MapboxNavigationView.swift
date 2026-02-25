@@ -136,7 +136,7 @@ public class MapboxNavigationView: UIView, NavigationViewControllerDelegate {
 
         // Build the navigation provider - simulation and voice config live here
         let coreConfig = CoreConfig(
-            simulationMode: shouldSimulateRoute ? .always : .never
+            locationSource: shouldSimulateRoute ? .simulation() : .live
         )
         let provider = MapboxNavigationProvider(coreConfig: coreConfig)
         self.mapboxNavigationProvider = provider
@@ -145,7 +145,7 @@ public class MapboxNavigationView: UIView, NavigationViewControllerDelegate {
 
         // Configure mute
         if mute {
-            provider.routeVoiceController.volume = 0
+            provider.routeVoiceController.speechSynthesizer.muted = true
         }
 
         let request = navigation.routingProvider().calculateRoutes(options: options)

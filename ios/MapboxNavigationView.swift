@@ -37,7 +37,7 @@ public class MapboxNavigationView: UIView, NavigationViewControllerDelegate {
     func setWaypoints(waypoints: [MapboxWaypoint]) {
         self.waypoints = waypoints.enumerated().map { (index, waypointData) in
             let name = waypointData.name as? String ?? "\(index)"
-            let waypoint = Waypoint(coordinate: waypointData.coordinate, name: name)
+            var waypoint = Waypoint(coordinate: waypointData.coordinate, name: name)
             waypoint.separatesLegs = waypointData.separatesLegs
             return waypoint
         }
@@ -136,10 +136,7 @@ public class MapboxNavigationView: UIView, NavigationViewControllerDelegate {
 
         // Build the navigation provider - simulation and voice config live here
         let coreConfig = CoreConfig(
-            credentials: .init(),
-            simulationOptions: SimulationOptions(
-                simulationMode: shouldSimulateRoute ? .always : .never
-            )
+            simulationMode: shouldSimulateRoute ? .always : .never
         )
         let provider = MapboxNavigationProvider(coreConfig: coreConfig)
         self.mapboxNavigationProvider = provider

@@ -94,7 +94,9 @@ public class MapboxNavigationView: UIView, NavigationViewControllerDelegate {
     }
 
     private func embed() {
-        guard startOrigin.count == 2 && destination.count == 2 else { return }
+        guard startOrigin.count == 2 && destination.count == 2 else {
+            return
+        }
 
         embedding = true
 
@@ -134,7 +136,6 @@ public class MapboxNavigationView: UIView, NavigationViewControllerDelegate {
         options.locale = Locale(identifier: locale)
         options.distanceMeasurementSystem = distanceUnit == "imperial" ? .imperial : .metric
 
-        // Build the navigation provider - simulation and voice config live here
         let coreConfig = CoreConfig(
             locationSource: shouldSimulateRoute ? .simulation() : .live
         )

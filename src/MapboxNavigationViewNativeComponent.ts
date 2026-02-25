@@ -1,5 +1,7 @@
 import type { HostComponent, ViewProps } from 'react-native';
-import { requireNativeComponent } from 'react-native';
+// NativeComponentRegistry.get uses a static viewConfigProvider in RN Bridgeless mode,
+// bypassing UIManager.getViewManagerConfig which fails for legacy Paper view managers.
+import { get as getNativeComponent } from 'react-native/Libraries/NativeComponent/NativeComponentRegistry';
 
 import type { Double } from 'react-native/Libraries/Types/CodegenTypes';
 import type { NativeEventsProps } from './types';
@@ -26,6 +28,30 @@ interface NativeProps extends ViewProps {
   travelMode?: string;
 }
 
-export default requireNativeComponent<NativeProps & NativeEventsProps>(
-  'MapboxNavigationView'
+export default getNativeComponent<NativeProps & NativeEventsProps>(
+  'MapboxNavigationView',
+  () => ({
+    uiViewClassName: 'MapboxNavigationView',
+    bubblingEventTypes: {},
+    directEventTypes: {
+      onLocationChange: { registrationName: 'onLocationChange' },
+      onRouteProgressChange: { registrationName: 'onRouteProgressChange' },
+      onError: { registrationName: 'onError' },
+      onCancelNavigation: { registrationName: 'onCancelNavigation' },
+      onArrive: { registrationName: 'onArrive' },
+    },
+    validAttributes: {
+      startOrigin: true,
+      waypoints: true,
+      destination: true,
+      destinationTitle: true,
+      shouldSimulateRoute: true,
+      showsEndOfRouteFeedback: true,
+      showCancelButton: true,
+      language: true,
+      distanceUnit: true,
+      mute: true,
+      travelMode: true,
+    },
+  })
 ) as HostComponent<NativeProps & NativeEventsProps>;

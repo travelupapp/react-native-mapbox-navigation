@@ -38,8 +38,13 @@ RCT_EXPORT_VIEW_PROPERTY(onArrive, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(startOrigin, NSArray)
 RCT_CUSTOM_VIEW_PROPERTY(waypoints, NSArray, NSObject)
 {
+    if (json == nil) return;
     MapboxWaypointArray *waypoint = [RCTConvert MapboxWaypointArray:json];
+    if (waypoint == nil) return;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
     [self performSelector:@selector(setWaypoints:waypoints:) withObject:view withObject:waypoint];
+#pragma clang diagnostic pop
 }
 RCT_EXPORT_VIEW_PROPERTY(destination, NSArray)
 RCT_EXPORT_VIEW_PROPERTY(destinationTitle, NSString)

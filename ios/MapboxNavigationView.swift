@@ -16,9 +16,26 @@ extension UIView {
     }
 }
 
-public class MapboxNavigationView: UIView, NavigationViewControllerDelegate {
-    public weak var navViewController: NavigationViewController?
+/// Container VC that hosts NavigationViewController as a child.
+/// When the child calls dismiss(), UIKit walks up the responder chain and
+/// dismisses this container (which is the one actually presented modally).
+/// viewDidDisappear fires reliably, giving us a callback to React.
+private class NavContainerViewController: UIViewController {
+    var onDismiss: (() -> Void)?
 
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        if isBeingDismissed {
+            onDismiss?()
+            onDismiss = nil
+        }
+    }
+}
+
+public class MapboxNavigationView: UIView, NavigationViewControllerDelegate {
+    public var navViewController: NavigationViewController?
+
+    private var containerViewController: NavContainerViewController?
     private var mapboxNavigationProvider: MapboxNavigationProvider?
     private var mapboxNavigation: MapboxNavigation?
     private var cancellables = Set<AnyCancellable>()
@@ -78,14 +95,18 @@ public class MapboxNavigationView: UIView, NavigationViewControllerDelegate {
 
         if (navViewController == nil && !embedding && !embedded) {
             embed()
-        } else {
-            navViewController?.view.frame = bounds
         }
     }
 
     public override func removeFromSuperview() {
         super.removeFromSuperview()
-        navViewController?.removeFromParent()
+        // Prevent the container's onDismiss from firing during React teardown
+        containerViewController?.onDismiss = nil
+        if let container = containerViewController {
+            container.dismiss(animated: false)
+        }
+        containerViewController = nil
+        navViewController = nil
         cancellables.removeAll()
         mapboxNavigationProvider = nil
         mapboxNavigation = nil
@@ -98,22 +119,24 @@ public class MapboxNavigationView: UIView, NavigationViewControllerDelegate {
             return
         }
 
+        guard let originLat = startOrigin[1] as? CLLocationDegrees,
+              let originLon = startOrigin[0] as? CLLocationDegrees,
+              let destLat = destination[1] as? CLLocationDegrees,
+              let destLon = destination[0] as? CLLocationDegrees else {
+            onError?(["message": "Invalid coordinates"])
+            return
+        }
+
         embedding = true
 
         let originWaypoint = Waypoint(
-            coordinate: CLLocationCoordinate2D(
-                latitude: startOrigin[1] as! CLLocationDegrees,
-                longitude: startOrigin[0] as! CLLocationDegrees
-            )
+            coordinate: CLLocationCoordinate2D(latitude: originLat, longitude: originLon)
         )
         var waypointsArray = [originWaypoint]
         waypointsArray.append(contentsOf: waypoints)
 
         let destinationWaypoint = Waypoint(
-            coordinate: CLLocationCoordinate2D(
-                latitude: destination[1] as! CLLocationDegrees,
-                longitude: destination[0] as! CLLocationDegrees
-            ),
+            coordinate: CLLocationCoordinate2D(latitude: destLat, longitude: destLon),
             name: destinationTitle as String
         )
         waypointsArray.append(destinationWaypoint)
@@ -173,12 +196,32 @@ public class MapboxNavigationView: UIView, NavigationViewControllerDelegate {
                     navigationOptions: navigationOptions
                 )
                 vc.delegate = self
-
-                parentVC.addChild(vc)
-                self.addSubview(vc.view)
-                vc.view.frame = self.bounds
-                vc.didMove(toParent: parentVC)
                 self.navViewController = vc
+
+                // Wrap NavigationVC in a container presented modally. This keeps it
+                // outside React Native's Fabric view hierarchy (touch events work)
+                // AND gives us a reliable dismiss callback via viewDidDisappear.
+                // When NavigationVC's Exit button calls self.dismiss(), UIKit walks
+                // up to the container (the presented VC) and dismisses it.
+                let container = NavContainerViewController()
+                container.modalPresentationStyle = .fullScreen
+                container.view.backgroundColor = .black
+                container.onDismiss = { [weak self] in
+                    guard let self else { return }
+                    self.navViewController = nil
+                    self.containerViewController = nil
+                    self.embedded = false
+                    self.onCancelNavigation?(["message": "Navigation Cancel"])
+                }
+
+                container.addChild(vc)
+                vc.view.frame = container.view.bounds
+                vc.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+                container.view.addSubview(vc.view)
+                vc.didMove(toParent: container)
+
+                self.containerViewController = container
+                parentVC.present(container, animated: true)
 
                 self.embedding = false
                 self.embedded = true
@@ -210,8 +253,18 @@ public class MapboxNavigationView: UIView, NavigationViewControllerDelegate {
         _ navigationViewController: NavigationViewController,
         byCanceling canceled: Bool
     ) {
-        if (!canceled) { return }
-        onCancelNavigation?(["message": "Navigation Cancel"])
+        // Container's viewDidDisappear is the primary callback path.
+        // If the delegate also fires, dismiss the container explicitly
+        // and nil the callback to prevent double-fire.
+        if canceled {
+            containerViewController?.onDismiss = nil
+            onCancelNavigation?(["message": "Navigation Cancel"])
+        }
+        containerViewController?.dismiss(animated: true) { [weak self] in
+            self?.navViewController = nil
+            self?.containerViewController = nil
+            self?.embedded = false
+        }
     }
 
     public func navigationViewController(

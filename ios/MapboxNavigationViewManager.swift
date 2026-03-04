@@ -16,8 +16,9 @@ class MapboxNavigationViewManager: RCTViewManager {
     }
     
     @objc(setWaypoints:waypoints:)
-    public func setWaypoints(view: Any, waypoints: [MapboxWaypoint]) {
-        guard let currentView = view as? MapboxNavigationView else {
+    public func setWaypoints(view: Any, waypoints: [MapboxWaypoint]?) {
+        guard let currentView = view as? MapboxNavigationView,
+              let waypoints = waypoints else {
             return
         }
         currentView.setWaypoints(waypoints: waypoints)

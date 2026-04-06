@@ -221,7 +221,11 @@ public class MapboxNavigationView: UIView, NavigationViewControllerDelegate {
                 vc.didMove(toParent: container)
 
                 self.containerViewController = container
-                parentVC.present(container, animated: true)
+                parentVC.present(container, animated: true) {
+                    // React Native sets the app's UIWindow.isUserInteractionEnabled = false.
+                    // Force-enable it so the modally presented NavigationVC receives touches.
+                    container.view.window?.isUserInteractionEnabled = true
+                }
 
                 self.embedding = false
                 self.embedded = true

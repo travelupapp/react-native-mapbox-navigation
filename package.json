@@ -181,16 +181,6 @@
       ]
     ]
   },
-  "codegenConfig": {
-    "name": "RNMapboxNavigationViewSpec",
-    "type": "components",
-    "jsSrcsDir": "src",
-    "ios": {
-      "componentProvider": {
-        "MapboxNavigationView": "MapboxNavigationViewManager"
-      }
-    }
-  },
   "create-react-native-library": {
     "type": "view-mixed",
     "languages": "kotlin-objc",
